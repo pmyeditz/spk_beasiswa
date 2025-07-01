@@ -4,6 +4,8 @@
 
 ```bash
 git clone git@github.com:pmyeditz/spk_beasiswa.git
+```
+```bash
 cd spk_beasiswa
 ```
 
