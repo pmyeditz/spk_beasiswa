@@ -94,6 +94,7 @@ Buka browser dan akses:
 ---
 
 ### 🔐 Login Admin
+Diharapkan mengubah email yang aktif stelah login
 
 ```
 Username : admin
