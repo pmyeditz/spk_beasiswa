@@ -2,7 +2,7 @@
 
 ---
 
-## 📥 1. Clone Project dari GitHub
+## 📥 1. Clone Project dari GitHub link https://drive.google.com/drive/folders/13zu5TOoEEXprRP4To9NYUSnqZe_6UNBz?usp=drive_link
 
 ```bash
 git clone git@github.com:pmyeditz/spk_beasiswa.git
