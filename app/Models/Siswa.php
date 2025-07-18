@@ -13,10 +13,10 @@ class Siswa extends Model
 
     protected $fillable = ['nis', 'nama_lengkap', 'jenis_kelamin', 'nilai_rapor', 'id_kelas'];
 
-    public function kelas()
-    {
-        return $this->belongsTo(Kelas::class, 'id_kelas');
-    }
+    // public function kelas()
+    // {
+    //     return $this->belongsTo(Kelas::class, 'id_kelas');
+    // }
 
     public function penilaian()
     {
@@ -26,5 +26,9 @@ class Siswa extends Model
     public function keputusan()
     {
         return $this->hasOne(Keputusan::class, 'nis', 'nis');
+    }
+    public function kelas()
+    {
+        return $this->belongsTo(Kelas::class, 'id_kelas', 'id_kelas');
     }
 }

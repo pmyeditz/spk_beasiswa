@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\Admin;
+use App\Models\Guru;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -22,9 +23,12 @@ class ForgotPasswordController extends Controller
     public function sendOtp(Request $request)
     {
         $request->validate(['email' => 'required|email']);
-        $admin = Admin::where('email', $request->email)->first();
 
-        if (!$admin) {
+        // Coba cari di Admin, jika tidak ada cari di Guru
+        $user = Admin::where('email', $request->email)->first()
+            ?? Guru::where('email', $request->email)->first();
+
+        if (!$user) {
             return back()->withErrors(['email' => 'Email tidak terdaftar']);
         }
 
@@ -51,13 +55,12 @@ class ForgotPasswordController extends Controller
 
         Mail::send('emails.otp', [
             'otp' => $otp,
-            'nama' => $admin->nama_admin,
-            'email' => $admin->email
+            'nama' => $user->nama_admin ?? $user->nama_guru,
+            'email' => $user->email
         ], function ($message) use ($request) {
             $message->to($request->email)
                 ->subject('Kode OTP Reset Password - SPK BEASISWA');
         });
-
 
         return redirect()->route('password.verify')->with('success', 'OTP telah dikirim ke email kamu.');
     }
@@ -65,7 +68,7 @@ class ForgotPasswordController extends Controller
     // Tampilkan form verifikasi OTP
     public function showVerifyForm()
     {
-        return view('auth.verify');
+        return view('auth.verify'); // form input OTP
     }
 
     // Proses verifikasi OTP
@@ -83,20 +86,20 @@ class ForgotPasswordController extends Controller
         if ($request->otp == $otpSession) {
             Session::put('otp_verified', true);
             Session::put('otp_used', true);
-            return redirect()->route('password.reset.form'); // Ganti view() menjadi redirect ke route
+            return redirect()->route('password.reset.form');
         }
 
         return back()->withErrors(['otp' => 'Kode OTP salah.']);
     }
 
-    // Tampilkan form reset password (baru)
+    // Tampilkan form reset password
     public function showResetForm()
     {
         if (!Session::get('otp_verified')) {
             return redirect()->route('password.request');
         }
 
-        return view('auth.reset');
+        return view('auth.reset'); // form input password baru
     }
 
     // Proses reset password
@@ -110,20 +113,22 @@ class ForgotPasswordController extends Controller
             'password' => 'required|min:6|confirmed'
         ]);
 
-        $admin = Admin::where('email', Session::get('email_reset'))->first();
+        $email = Session::get('email_reset');
+        $user = Admin::where('email', $email)->first()
+            ?? Guru::where('email', $email)->first();
 
-        if (!$admin) {
+        if (!$user) {
             return redirect()->route('password.request')->withErrors(['email' => 'Akun tidak ditemukan.']);
         }
 
-        if (Hash::check($request->password, $admin->password)) {
+        if (Hash::check($request->password, $user->password)) {
             return redirect()->route('password.reset.form')->withErrors([
                 'password' => 'Password baru tidak boleh sama dengan password sebelumnya.'
             ]);
         }
 
-        $admin->password = Hash::make($request->password);
-        $admin->save();
+        $user->password = Hash::make($request->password);
+        $user->save();
 
         Session::forget([
             'otp',

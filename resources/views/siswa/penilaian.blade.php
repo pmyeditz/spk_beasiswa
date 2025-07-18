@@ -9,10 +9,12 @@
             @if(session('success'))
                 <div class="alert alert-success">{{ session('success') }}</div>
             @endif
-
+            @php
+                $kelasSiswa = $siswa->pluck('kelas.nama_kelas')->unique()->implode(', ');
+            @endphp
             {{-- Header --}}
             <div class="d-flex justify-content-between mb-3">
-                <h4><i class="fa-solid fa-clipboard-list me-2"></i>Data Penilaian</h4>
+                <h4><i class="fa-solid fa-clipboard-list me-2"></i>Data Penilaian Kelas <strong>{{ $kelasSiswa ?: '-' }}</strong></h4>
                 <button class="btn btn-success btn-sm" onclick="openTambah()">+ Tambah</button>
             </div>
 
@@ -33,7 +35,13 @@
                             <tr>
                                 <td>{{ $item->siswa->nama_lengkap }}</td>
                                 <td>{{ $item->kriteria->nama_kriteria }}</td>
-                                <td>{{ $item->nilai }}</td>
+                                <td>
+                                    @if($item->id_kriteria == 4)
+                                        Rp {{ number_format($item->nilai, 0, ',', '.') }}
+                                    @else
+                                        {{ $item->nilai }}
+                                    @endif
+                                </td>
                                 <td>
                                     <form action="{{ route('penilaian.destroy', $item->id_penilaian) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus data ini?')">
                                         @csrf @method('DELETE')
@@ -64,14 +72,14 @@
                         @endforeach
                     </select>
 
-                    <select name="id_kriteria" class="form-control mb-2" required>
+                    <select name="id_kriteria" id="kriteriaSelect" class="form-control mb-2" required>
                         <option value="">-- Pilih Kriteria --</option>
                         @foreach($kriteria as $k)
                             <option value="{{ $k->id_kriteria }}">{{ $k->nama_kriteria }}</option>
                         @endforeach
                     </select>
 
-                    <input type="number" name="nilai" step="0.01" class="form-control mb-3" placeholder="Nilai" required>
+                    <input type="text" name="nilai" id="nilaiInput" class="form-control mb-3" placeholder="Nilai" required>
 
                     <div class="d-flex justify-content-between">
                         <button class="btn btn-success">Simpan</button>
@@ -96,6 +104,7 @@
 
         </div>
     </div>
+
     {{-- SCRIPT --}}
     <script>
     function openTambah() {
@@ -114,6 +123,46 @@
     function closeEdit() {
         document.getElementById('formEdit').classList.remove('active');
     }
+
+    // Format angka ke Rupiah
+    function formatRupiah(angka, prefix = 'Rp ') {
+        let number_string = angka.replace(/[^,\d]/g, '').toString(),
+            split = number_string.split(','),
+            sisa = split[0].length % 3,
+            rupiah = split[0].substr(0, sisa),
+            ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+        if (ribuan) {
+            rupiah += (sisa ? '.' : '') + ribuan.join('.');
+        }
+
+        rupiah = split[1] !== undefined ? rupiah + ',' + split[1] : rupiah;
+        return prefix + rupiah;
+    }
+
+    document.getElementById('kriteriaSelect').addEventListener('change', function () {
+        const selectedId = this.value;
+        const nilaiInput = document.getElementById('nilaiInput');
+
+        if (selectedId == 4) { // ID 4 = Penghasilan Ortu
+            nilaiInput.placeholder = "Masukkan nominal dalam Rupiah";
+            nilaiInput.value = "";
+            nilaiInput.type = "text";
+
+            nilaiInput.addEventListener('input', function formatInput(e) {
+                this.value = formatRupiah(this.value, 'Rp ');
+            });
+        } else {
+            nilaiInput.placeholder = "Nilai (0 - 100)";
+            nilaiInput.type = "number";
+            nilaiInput.value = "";
+            // Menghapus event listener agar tidak bentrok
+            nilaiInput.replaceWith(nilaiInput.cloneNode(true));
+            document.getElementById('nilaiInput').setAttribute('name', 'nilai');
+            document.getElementById('nilaiInput').setAttribute('id', 'nilaiInput');
+            document.getElementById('nilaiInput').setAttribute('class', 'form-control mb-3');
+        }
+    });
     </script>
 
     @endsection

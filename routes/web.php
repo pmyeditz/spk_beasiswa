@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\GuruController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SiswaController;
 use App\Http\Controllers\KelasController;
@@ -17,7 +18,10 @@ use App\Http\Controllers\KeputusanController;
 |--------------------------------------------------------------------------
 */
 
-Route::get('/', fn() => redirect('/login'));
+Route::get('/', function () {
+    return view('auth.loading');
+});
+// Route::get('/', fn() => redirect('/login'));
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login'); // ✅
 Route::post('/login', [LoginController::class, 'loginProcess'])->name('login.process');
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
@@ -47,8 +51,13 @@ Route::middleware(['admin.session'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'index'])->name('admin.profile');
     Route::post('/profile/update', [ProfileController::class, 'update'])->name('admin.profile.update');
 
+
+    // guru
+    Route::resource('guru', GuruController::class);
+
     // Master Data
-    Route::resource('/siswa', SiswaController::class)->parameters(['siswa' => 'nis']);
+    Route::resource('siswa', SiswaController::class)->except(['show']);
+    Route::get('/siswa/download', [SiswaController::class, 'download'])->name('siswa.download');
     Route::resource('/kelas', KelasController::class)->except(['create', 'edit', 'show']);
     Route::delete('/kelas/{id}', [KelasController::class, 'destroy'])->name('kelas.destroy');
     Route::resource('/kriteria', KriteriaController::class)->except(['create', 'edit', 'show']);

@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
-use PDF;
+// use PDF;
+use App\Models\Guru;
+use App\Models\Kelas;
 use App\Models\Siswa;
 use App\Models\Laporan;
 use App\Models\Kriteria;
+// use Barryvdh\DomPDF\PDF;
 use App\Models\Keputusan;
 use App\Models\Penilaian;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class KeputusanController extends Controller
 {
@@ -128,9 +132,21 @@ class KeputusanController extends Controller
 
 
 
+
     public function exportPDF($nis)
     {
-        $siswa = Siswa::with(['penilaian.kriteria'])->where('nis', $nis)->firstOrFail();
+        $userRole = session('user_role');
+        $idGuru = session('id_guru');
+
+        $siswa = Siswa::with(['penilaian.kriteria', 'kelas'])->where('nis', $nis)->firstOrFail();
+
+        if ($userRole === 'wali_kelas') {
+            $kelasIds = Kelas::where('wali_kelas', $idGuru)->pluck('id_kelas');
+
+            if (!in_array($siswa->id_kelas, $kelasIds->toArray())) {
+                abort(403, 'Anda tidak memiliki akses ke data siswa ini.');
+            }
+        }
 
         $data = [];
         $total = 0;
@@ -140,10 +156,13 @@ class KeputusanController extends Controller
             $bobot = floatval($penilaian->kriteria->bobot);
             $sifat = $penilaian->kriteria->sifat;
 
-            $max = \App\Models\Penilaian::where('id_kriteria', $penilaian->id_kriteria)->max('nilai') ?? 1;
-            $min = \App\Models\Penilaian::where('id_kriteria', $penilaian->id_kriteria)->min('nilai') ?? 1;
+            $max = Penilaian::where('id_kriteria', $penilaian->id_kriteria)->max('nilai') ?? 1;
+            $min = Penilaian::where('id_kriteria', $penilaian->id_kriteria)->min('nilai') ?? 1;
 
-            $normalisasi = $sifat === 'benefit' ? $nilai / $max : $min / $nilai;
+            $normalisasi = $sifat === 'benefit'
+                ? ($max > 0 ? $nilai / $max : 0)
+                : ($nilai > 0 ? $min / $nilai : 0);
+
             $hasil = $normalisasi * $bobot;
 
             $data[] = [
@@ -158,12 +177,22 @@ class KeputusanController extends Controller
             $total += $hasil;
         }
 
-        $pdf = PDF::loadView('siswa.keputusan_pdf', [
+        $waliKelas = null;
+        if ($siswa->kelas && isset($siswa->kelas->wali_kelas)) {
+            $waliKelas = Guru::where('id_guru', $siswa->kelas->wali_kelas)->first();
+        }
+
+        $kepalaSekolah = Guru::where('role', 'kepala_sekolah')->first();
+
+        $pdf = Pdf::loadView('siswa.keputusan_pdf', [
             'siswa' => $siswa,
             'data' => $data,
-            'total' => round($total, 4)
+            'total' => round($total, 4),
+            'waliKelas' => $waliKelas,
+            'kepalaSekolah' => $kepalaSekolah,
         ]);
 
-        return $pdf->download("keputusan_saw_{$siswa->nis}.pdf");
+        // 💡 tampilkan di browser, bukan download
+        return $pdf->stream("keputusan_saw_{$siswa->nis}.pdf");
     }
 }

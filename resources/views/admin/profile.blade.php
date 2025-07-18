@@ -6,7 +6,15 @@
         <div class="container">
 
             <div class="profile-card text-center">
-                <h2 class="text-center mb-4">Profil Admin</h2>
+                @php
+                    $userName = session('user_name');
+                    $userRole = session('user_role'); // 'admin', 'wali_kelas', 'kepala_sekolah'
+                    $avatar = "https://ui-avatars.com/api/?name=" . urlencode($userName) . "&background=00ffaa&color=000";
+                    $username = session('username');
+                    $email = session('email');
+                @endphp
+
+                <h2 class="text-center mb-4">Profil {{ ucfirst(str_replace('_', ' ', $userRole)) }}</h2>
 
                 {{-- Pesan sukses --}}
                 @if(session('success'))
@@ -23,21 +31,22 @@
                         </ul>
                     </div>
                 @endif
-                {{-- Avatar (optional, pakai default dulu) --}}
-                <img src="https://ui-avatars.com/api/?name={{ urlencode($admin->nama_admin) }}&background=00ffaa&color=000" class="avatar mb-3" alt="Avatar Admin">
+
+                {{-- Avatar --}}
+                <img src="{{ $avatar }}" class="avatar mb-3" alt="Avatar">
 
                 <form action="{{ route('admin.profile.update') }}" method="POST" id="profileForm">
                     @csrf
 
                     {{-- Username --}}
-                    <p class="info"><strong>Username:</strong> {{ $admin->username }}</p>
+                    <p class="info"><strong>Username:</strong> {{ $username }}</p>
 
-                    {{-- Nama Admin --}}
+                    {{-- Nama --}}
                     <div class="mb-3 d-flex align-items-center justify-content-center gap-2">
-                        <input type="text" name="nama_admin" id="nama_admin" class="form-control text-center"
-                               value="{{ old('nama_admin', $admin->nama_admin) }}" readonly style="max-width: 300px;">
+                        <input type="text" name="nama" id="nama" class="form-control text-center"
+                               value="{{ old('nama', $userName) }}" readonly style="max-width: 300px;">
                         <button type="button" class="btn btn-outline-light btn-sm"
-                                onclick="enableField('nama_admin')">
+                                onclick="enableField('nama')">
                             <i class="fa-solid fa-pen-to-square"></i>
                         </button>
                     </div>
@@ -45,7 +54,7 @@
                     {{-- Email --}}
                     <div class="mb-3 d-flex align-items-center justify-content-center gap-2">
                         <input type="email" name="email" id="email" class="form-control text-center"
-                               value="{{ old('email', $admin->email) }}" readonly style="max-width: 300px;">
+                               value="{{ old('email', $email) }}" readonly style="max-width: 300px;">
                         <button type="button" class="btn btn-outline-light btn-sm"
                                 onclick="enableField('email')">
                             <i class="fa-solid fa-pen-to-square"></i>
@@ -84,10 +93,5 @@
             </div>
         </div>
     </div>
-
-    {{-- Script --}}
-    {{-- <script>
-
-    </script> --}}
     @endsection
 </x-main>

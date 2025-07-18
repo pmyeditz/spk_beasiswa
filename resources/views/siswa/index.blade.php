@@ -8,15 +8,29 @@
             @if(session('success'))
                 <div class="alert alert-success">{{ session('success') }}</div>
             @endif
+                @php
+                    $kelasSiswa = $siswa->pluck('kelas.nama_kelas')->unique()->implode(', ');
+                @endphp
 
             {{-- Header --}}
             <div class="d-flex justify-content-between align-items-center mb-3">
-                <h4 class="mb-0"><i class="fa-solid fa-table me-2"></i>Data Siswa</h4>
-                <button class="btn btn-success btn-sm" onclick="openTambah()">+ Tambah Siswa</button>
+                <h4 class="mb-0">
+                    <i class="fa-solid fa-table me-2"></i>Data Siswa kelas <strong>{{ $kelasSiswa ?: '-' }}</strong>
+                </h4>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success btn-sm" onclick="openTambah()">
+                        <i class="fa fa-plus me-1"></i>Tambah Siswa
+                    </button>
+                    <a href="{{ route('siswa.download') }}" target="_blank" class="btn btn-info btn-sm">
+                        <i class="fa fa-download me-1"></i>Unduh
+                    </a>
+                </div>
             </div>
+
 
             {{-- Tabel --}}
             <div class="card-custom">
+
                 <div class="table-responsive">
                     <table id="ztrixTable" class="table table-striped table-bordered">
                         <thead>
